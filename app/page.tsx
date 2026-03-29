@@ -1,7 +1,6 @@
 import { promises as fs } from "fs";
 import path from "path";
 import Link from "next/link";
-import { Instagram, MessageCircle } from "lucide-react";
 
 type Produto = {
   id: number;
@@ -13,7 +12,6 @@ type Produto = {
 
 const numeroWhatsApp = "5551981710738";
 const nomeLoja = "Pulse Store";
-const instagramUrl = "https://www.instagram.com/pulse.store26/";
 
 function formatarTexto(texto: string) {
   return texto
@@ -26,14 +24,6 @@ function formatarTexto(texto: string) {
     .join(" ");
 }
 
-function slugCategoria(categoria: string) {
-  return categoria
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/\s+/g, "-");
-}
-
 function criarDestaque(index: number) {
   const destaques = [
     "Disponível",
@@ -41,7 +31,6 @@ function criarDestaque(index: number) {
     "Consulte tamanhos",
     "Peça em destaque",
   ];
-
   return destaques[index % destaques.length];
 }
 
@@ -121,6 +110,10 @@ async function lerProdutosDaPasta() {
   }
 }
 
+function slugCategoria(categoria: string) {
+  return categoria.toLowerCase().replace(/\s+/g, "-");
+}
+
 type HomeProps = {
   searchParams?: Promise<{
     categoria?: string;
@@ -151,7 +144,7 @@ export default async function Home({ searchParams }: HomeProps) {
       <section className="relative overflow-hidden border-b border-white/10">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(236,72,153,0.22),transparent_30%),radial-gradient(circle_at_top_right,rgba(59,130,246,0.18),transparent_30%),linear-gradient(to_bottom,rgba(255,255,255,0.03),rgba(255,255,255,0))]" />
 
-        <header className="relative z-10 mx-auto flex max-w-7xl flex-col gap-4 px-6 py-6 md:flex-row md:items-center md:justify-between">
+        <header className="relative z-10 mx-auto flex max-w-7xl items-center justify-between px-6 py-6">
           <div>
             <p className="text-xs uppercase tracking-[0.35em] text-white/40">
               Catálogo premium
@@ -161,27 +154,12 @@ export default async function Home({ searchParams }: HomeProps) {
             </h1>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3">
-            <a
-              href={instagramUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 rounded-full border border-pink-300/25 bg-pink-300/10 px-4 py-3 text-sm font-medium text-pink-100 transition hover:bg-pink-300/20"
-            >
-              <Instagram className="h-4 w-4" />
-              Instagram
-            </a>
-
-            <a
-              href={`https://wa.me/${numeroWhatsApp}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-5 py-3 text-sm font-medium text-white backdrop-blur transition hover:bg-white hover:text-neutral-900"
-            >
-              <MessageCircle className="h-4 w-4" />
-              Chamar no WhatsApp
-            </a>
-          </div>
+          <a
+            href={`https://wa.me/${numeroWhatsApp}`}
+            className="rounded-full border border-white/15 bg-white/10 px-5 py-3 text-sm font-medium text-white backdrop-blur transition hover:bg-white hover:text-neutral-900"
+          >
+            Chamar no WhatsApp
+          </a>
         </header>
 
         <div className="relative z-10 mx-auto grid max-w-7xl gap-10 px-6 pb-16 pt-6 md:grid-cols-[1.1fr_0.9fr] md:items-center">
@@ -192,40 +170,26 @@ export default async function Home({ searchParams }: HomeProps) {
             </div>
 
             <h2 className="mt-6 max-w-3xl text-5xl font-semibold leading-tight tracking-tight md:text-7xl">
-              Escolha sua seção e encontre mais rápido.
+              Escolha sua seção e veja só o que interessa.
             </h2>
 
             <p className="mt-6 max-w-2xl text-base leading-7 text-white/65 md:text-lg">
-              O catálogo lê automaticamente as fotos da pasta de produtos e agora
-              também permite navegar por categorias.
+              Agora o catálogo fica dividido por categorias. Ao clicar em uma
+              seção, o site mostra apenas os produtos daquela categoria.
             </p>
 
             <div className="mt-8 flex flex-wrap gap-3">
-              <a
-                href="#catalogo"
+              <Link
+                href="/"
                 className="rounded-full bg-white px-6 py-3 text-sm font-semibold text-neutral-900 transition hover:scale-[1.02]"
               >
                 Ver catálogo
-              </a>
-
+              </Link>
               <a
                 href={`https://wa.me/${numeroWhatsApp}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-6 py-3 text-sm font-semibold text-white transition hover:bg-white/10"
+                className="rounded-full border border-white/15 bg-white/5 px-6 py-3 text-sm font-semibold text-white transition hover:bg-white/10"
               >
-                <MessageCircle className="h-4 w-4" />
-                Chamar no WhatsApp
-              </a>
-
-              <a
-                href={instagramUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 rounded-full border border-pink-300/25 bg-pink-300/10 px-6 py-3 text-sm font-semibold text-pink-100 transition hover:bg-pink-300/20"
-              >
-                <Instagram className="h-4 w-4" />
-                Ver Instagram
+                Comprar agora
               </a>
             </div>
           </div>
@@ -340,11 +304,8 @@ export default async function Home({ searchParams }: HomeProps) {
                     href={`https://wa.me/${numeroWhatsApp}?text=${encodeURIComponent(
                       `Olá! Tenho interesse em ${produto.nome}. Tamanho:`
                     )}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-white px-4 py-3 text-sm font-semibold text-neutral-900 transition hover:bg-pink-300"
+                    className="inline-flex w-full items-center justify-center rounded-2xl bg-white px-4 py-3 text-sm font-semibold text-neutral-900 transition hover:bg-pink-300"
                   >
-                    <MessageCircle className="h-4 w-4" />
                     Escolher tamanho
                   </a>
                 </div>
