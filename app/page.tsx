@@ -1,5 +1,6 @@
 import { promises as fs } from "fs";
 import path from "path";
+import Link from "next/link";
 
 type Produto = {
   id: number;
@@ -97,16 +98,46 @@ async function lerProdutosDaPasta() {
       );
     }
 
-    return produtos;
+    return produtos.sort((a, b) => {
+      if (a.categoria !== b.categoria) {
+        return a.categoria.localeCompare(b.categoria);
+      }
+      return a.nome.localeCompare(b.nome);
+    });
   } catch (erro) {
     console.error("Erro ao ler produtos:", erro);
     return [];
   }
 }
 
-export default async function Home() {
+function slugCategoria(categoria: string) {
+  return categoria.toLowerCase().replace(/\s+/g, "-");
+}
+
+type HomeProps = {
+  searchParams?: Promise<{
+    categoria?: string;
+  }>;
+};
+
+export default async function Home({ searchParams }: HomeProps) {
+  const params = (await searchParams) || {};
+  const categoriaSelecionada = params.categoria || "todos";
+
   const produtos = await lerProdutosDaPasta();
-  const produtosDestaque = produtos.slice(0, 4);
+  const categorias = Array.from(new Set(produtos.map((p) => p.categoria)));
+
+  const produtosFiltrados =
+    categoriaSelecionada === "todos"
+      ? produtos
+      : produtos.filter(
+          (produto) => slugCategoria(produto.categoria) === categoriaSelecionada
+        );
+
+  const produtosDestaque =
+    categoriaSelecionada === "todos"
+      ? produtos.slice(0, 4)
+      : produtosFiltrados.slice(0, 4);
 
   return (
     <main className="min-h-screen bg-neutral-950 text-white">
@@ -139,21 +170,21 @@ export default async function Home() {
             </div>
 
             <h2 className="mt-6 max-w-3xl text-5xl font-semibold leading-tight tracking-tight md:text-7xl">
-              Escolha sua peça e informe o tamanho no WhatsApp.
+              Escolha sua seção e veja só o que interessa.
             </h2>
 
             <p className="mt-6 max-w-2xl text-base leading-7 text-white/65 md:text-lg">
-              O catálogo lê automaticamente as fotos dentro da pasta de
-              produtos, inclusive subpastas.
+              Agora o catálogo fica dividido por categorias. Ao clicar em uma
+              seção, o site mostra apenas os produtos daquela categoria.
             </p>
 
             <div className="mt-8 flex flex-wrap gap-3">
-              <a
-                href="#catalogo"
+              <Link
+                href="/"
                 className="rounded-full bg-white px-6 py-3 text-sm font-semibold text-neutral-900 transition hover:scale-[1.02]"
               >
                 Ver catálogo
-              </a>
+              </Link>
               <a
                 href={`https://wa.me/${numeroWhatsApp}`}
                 className="rounded-full border border-white/15 bg-white/5 px-6 py-3 text-sm font-semibold text-white transition hover:bg-white/10"
@@ -189,23 +220,56 @@ export default async function Home() {
       </section>
 
       <section id="catalogo" className="mx-auto max-w-7xl px-6 py-14">
-        <div className="mb-8">
-          <p className="text-sm uppercase tracking-[0.25em] text-white/35">
-            Seleção
-          </p>
-          <h3 className="mt-2 text-3xl font-semibold tracking-tight md:text-5xl">
-            Destaques do catálogo
-          </h3>
+        <div className="mb-8 flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
+          <div>
+            <p className="text-sm uppercase tracking-[0.25em] text-white/35">
+              Seções
+            </p>
+            <h3 className="mt-2 text-3xl font-semibold tracking-tight md:text-5xl">
+              Navegue por categoria
+            </h3>
+          </div>
+
+          <div className="flex flex-wrap gap-3">
+            <Link
+              href="/"
+              className={`rounded-full px-4 py-2 text-sm font-medium transition ${
+                categoriaSelecionada === "todos"
+                  ? "bg-white text-neutral-900"
+                  : "border border-white/15 text-white/75 hover:bg-white/10"
+              }`}
+            >
+              Todos
+            </Link>
+
+            {categorias.map((categoria) => {
+              const slug = slugCategoria(categoria);
+              const ativa = categoriaSelecionada === slug;
+
+              return (
+                <Link
+                  key={categoria}
+                  href={`/?categoria=${slug}`}
+                  className={`rounded-full px-4 py-2 text-sm font-medium transition ${
+                    ativa
+                      ? "bg-white text-neutral-900"
+                      : "border border-white/15 text-white/75 hover:bg-white/10"
+                  }`}
+                >
+                  {categoria}
+                </Link>
+              );
+            })}
+          </div>
         </div>
 
-        {produtos.length === 0 ? (
+        {produtosFiltrados.length === 0 ? (
           <div className="rounded-[2rem] border border-dashed border-white/15 bg-white/[0.03] p-10 text-center text-white/60">
-            Nenhum produto encontrado em{" "}
-            <span className="font-semibold text-white">public/produtos</span>.
+            Nenhum produto encontrado nesta seção.
           </div>
         ) : (
           <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-4">
-            {produtos.map((produto) => (
+            {produtosFiltrados.map((produto) => (
               <article
                 key={produto.id}
                 className="group overflow-hidden rounded-[2rem] border border-white/10 bg-white/[0.04] shadow-xl shadow-black/20 transition duration-300 hover:-translate-y-2 hover:border-white/20 hover:bg-white/[0.06]"
