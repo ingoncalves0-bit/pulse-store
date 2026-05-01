@@ -2,6 +2,8 @@ import { promises as fs } from "fs";
 import path from "path";
 import Link from "next/link";
 
+export const dynamic = "force-dynamic";
+
 type Produto = {
   id: number;
   nome: string;
