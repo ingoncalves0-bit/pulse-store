@@ -9,7 +9,6 @@ type Produto = {
   nome: string;
   imagem: string;
   categoria: string;
-  destaque: string;
 };
 
 const numeroWhatsApp = "5551981710738";
@@ -26,29 +25,32 @@ function formatarTexto(texto: string) {
     .join(" ");
 }
 
-function criarDestaque(index: number) {
-  const destaques = [
-    "Disponível",
-    "Em catálogo",
-    "Consulte tamanhos",
-    "Peça em destaque",
-  ];
-  return destaques[index % destaques.length];
+function slugCategoria(categoria: string) {
+  return categoria
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/\s+/g, "-");
 }
 
-async function lerProdutos() {
+async function lerProdutos(): Promise<Produto[]> {
   try {
     const base = path.join(process.cwd(), "public", "produtos");
-    const categoriasDir = await fs.readdir(base, { withFileTypes: true });
 
-    let produtos: Produto[] = [];
+    let categoriasDir: any[] = [];
+    try {
+      categoriasDir = await fs.readdir(base, { withFileTypes: true });
+    } catch {
+      return [];
+    }
+
+    const produtos: Produto[] = [];
     let id = 1;
 
     for (const cat of categoriasDir) {
       if (!cat.isDirectory()) continue;
 
-      const categoria = cat.name;
-      const pasta = path.join(base, categoria);
+      const pasta = path.join(base, cat.name);
 
       let arquivos: string[] = [];
       try {
@@ -63,25 +65,24 @@ async function lerProdutos() {
         produtos.push({
           id: id++,
           nome: formatarTexto(arquivo),
-          imagem: `/produtos/${categoria}/${arquivo}`,
-          categoria: formatarTexto(categoria),
-          destaque: criarDestaque(id),
+          imagem: `/produtos/${cat.name}/${arquivo}`,
+          categoria: formatarTexto(cat.name),
         });
       }
     }
 
     return produtos;
   } catch (e) {
-    console.error(e);
+    console.error("Erro ao ler produtos:", e);
     return [];
   }
 }
 
-function slugCategoria(categoria: string) {
-  return categoria.toLowerCase().replace(/\s+/g, "-");
-}
-
-export default async function Home({ searchParams }: any) {
+export default async function Home({
+  searchParams,
+}: {
+  searchParams?: { categoria?: string };
+}) {
   const categoriaSelecionada = searchParams?.categoria || "todos";
 
   const produtos = await lerProdutos();
@@ -94,75 +95,131 @@ export default async function Home({ searchParams }: any) {
           (p) => slugCategoria(p.categoria) === categoriaSelecionada
         );
 
-  const produtosDestaque = produtos.slice(0, 4);
+  const hero = produtos.slice(0, 3);
 
   return (
-    <main className="min-h-screen bg-neutral-950 text-white">
-      <header className="flex justify-between px-6 py-6">
-        <h1 className="text-3xl font-semibold">{nomeLoja}</h1>
+    <>
+      <style>{`
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-        <a
-          href={`https://wa.me/${numeroWhatsApp}`}
-          className="border px-4 py-2 rounded-full"
-        >
-          WhatsApp
-        </a>
-      </header>
+        :root {
+          --cream: #f5f0e8;
+          --ink: #0f0e0c;
+          --accent: #c8501a;
+          --muted: #9c9389;
+          --border: rgba(15,14,12,0.1);
+        }
 
-      <section className="grid grid-cols-2 gap-4 px-6">
-        {produtosDestaque.map((p) => (
-          <img
-            key={p.id}
-            src={p.imagem}
-            className="rounded-2xl object-cover h-48 w-full"
-          />
-        ))}
-      </section>
+        body {
+          background: var(--cream);
+          color: var(--ink);
+          font-family: Arial, sans-serif;
+        }
 
-      <section className="px-6 py-10">
-        <div className="flex flex-wrap gap-3 mb-6">
-          <Link href="/" className="bg-white text-black px-4 py-2 rounded-full">
-            Todos
-          </Link>
+        .nav {
+          position: fixed;
+          top: 0; left: 0; right: 0;
+          display: flex;
+          justify-content: space-between;
+          padding: 20px;
+          background: var(--cream);
+          border-bottom: 1px solid var(--border);
+        }
 
-          {categorias.map((categoria) => {
-            const slug = slugCategoria(categoria);
-            return (
-              <Link
-                key={categoria}
-                href={`/?categoria=${slug}`}
-                className="border px-4 py-2 rounded-full"
-              >
-                {categoria}
-              </Link>
-            );
-          })}
+        .hero {
+          padding-top: 80px;
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+        }
+
+        .hero-left {
+          padding: 40px;
+        }
+
+        .hero-title {
+          font-size: 48px;
+          margin-bottom: 20px;
+        }
+
+        .hero-right {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+        }
+
+        .hero-img img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+        }
+
+        .catalogo {
+          padding: 40px;
+        }
+
+        .grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+          gap: 20px;
+        }
+
+        .card img {
+          width: 100%;
+          height: 300px;
+          object-fit: cover;
+        }
+
+        .card {
+          border: 1px solid var(--border);
+          padding: 10px;
+        }
+      `}</style>
+
+      <nav className="nav">
+        <h2>{nomeLoja}</h2>
+        <a href={`https://wa.me/${numeroWhatsApp}`}>WhatsApp</a>
+      </nav>
+
+      <section className="hero">
+        <div className="hero-left">
+          <h1 className="hero-title">Catálogo</h1>
+          <p>Escolha sua peça e peça no WhatsApp</p>
         </div>
 
-        <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-4">
-          {produtosFiltrados.map((produto) => (
-            <article key={produto.id} className="bg-white/5 rounded-2xl overflow-hidden">
-              <img
-                src={produto.imagem}
-                className="w-full h-64 object-cover"
-              />
-
-              <div className="p-4">
-                <h4 className="text-lg font-semibold">{produto.nome}</h4>
-
-                <a
-                  href={`https://wa.me/${numeroWhatsApp}?text=${encodeURIComponent(
-                    `Olá! Tenho interesse em ${produto.nome}`
-                  )}`}
-                  className="block mt-3 bg-white text-black text-center py-2 rounded-xl"
-                >
-                  Ver no WhatsApp
-                </a>
-              </div>
-            </article>
+        <div className="hero-right">
+          {hero.map((p) => (
+            <div key={p.id} className="hero-img">
+              <img src={p.imagem} />
+            </div>
           ))}
         </div>
       </section>
-    </main>
+
+      <section className="catalogo">
+        <div style={{ marginBottom: 20 }}>
+          <Link href="/">Todos</Link>{" "}
+          {categorias.map((cat) => (
+            <Link key={cat} href={`/?categoria=${slugCategoria(cat)}`}>
+              {cat}
+            </Link>
+          ))}
+        </div>
+
+        <div className="grid">
+          {produtosFiltrados.map((produto) => (
+            <div key={produto.id} className="card">
+              <img src={produto.imagem} />
+              <h3>{produto.nome}</h3>
+              <a
+                href={`https://wa.me/${numeroWhatsApp}?text=${encodeURIComponent(
+                  `Olá! Tenho interesse em ${produto.nome}`
+                )}`}
+              >
+                Comprar
+              </a>
+            </div>
+          ))}
+        </div>
+      </section>
+    </>
   );
 }
