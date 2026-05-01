@@ -1,109 +1,72 @@
-import Link from "next/link";
-import { produtos } from "./produtos";
+import { promises as fs } from "fs";
+import path from "path";
 
-const numeroWhatsApp = "5551981710738";
-const nomeLoja = "Pulse Store";
+export const dynamic = "force-dynamic";
 
-function slugCategoria(categoria: string) {
-  return categoria.toLowerCase().replace(/\s+/g, "-");
-}
-
-type HomeProps = {
-  searchParams?: {
-    categoria?: string;
-  };
+type Produto = {
+  id: number;
+  nome: string;
+  imagem: string;
+  categoria: string;
+  preco: string;
 };
 
-export default function Home({ searchParams }: HomeProps) {
-  const categoriaSelecionada = searchParams?.categoria || "todos";
+function formatarNome(nome: string) {
+  return nome
+    .replace(/\.[^/.]+$/, "")
+    .replace(/-\d+$/, "") // remove preço do final
+    .replace(/-/g, " ")
+    .replace(/\b\w/g, (l) => l.toUpperCase());
+}
 
-  const categorias = Array.from(new Set(produtos.map((p) => p.categoria)));
+function extrairPreco(nome: string) {
+  const match = nome.match(/-(\d+)\./);
+  return match ? match[1] : "0";
+}
 
-  const produtosFiltrados =
-    categoriaSelecionada === "todos"
-      ? produtos
-      : produtos.filter(
-          (produto) =>
-            slugCategoria(produto.categoria) === categoriaSelecionada
-        );
+async function lerProdutos() {
+  const base = path.join(process.cwd(), "public", "produtos");
+  const categorias = await fs.readdir(base);
 
-  const produtosDestaque =
-    categoriaSelecionada === "todos"
-      ? produtos.slice(0, 4)
-      : produtosFiltrados.slice(0, 4);
+  let produtos: Produto[] = [];
+  let id = 1;
+
+  for (const categoria of categorias) {
+    const pasta = path.join(base, categoria);
+    const arquivos = await fs.readdir(pasta);
+
+    for (const arquivo of arquivos) {
+      if (!/\.(jpg|png|webp)$/i.test(arquivo)) continue;
+
+      produtos.push({
+        id: id++,
+        nome: formatarNome(arquivo),
+        preco: extrairPreco(arquivo),
+        imagem: `/produtos/${categoria}/${arquivo}`,
+        categoria: categoria,
+      });
+    }
+  }
+
+  return produtos;
+}
+
+export default async function Page() {
+  const produtos = await lerProdutos();
 
   return (
-    <main className="min-h-screen bg-neutral-950 text-white">
-      <header className="flex justify-between p-6">
-        <h1 className="text-2xl font-bold">{nomeLoja}</h1>
+    <div style={{ padding: 20 }}>
+      <h1>Catálogo</h1>
 
-        <a
-          href={`https://wa.me/${numeroWhatsApp}`}
-          className="border px-4 py-2 rounded-lg"
-        >
-          WhatsApp
-        </a>
-      </header>
-
-      <section className="grid grid-cols-2 gap-4 p-6">
-        {produtosDestaque.map((produto) => (
-          <img
-            key={produto.id}
-            src={produto.imagem}
-            className="rounded-xl object-cover h-48 w-full"
-          />
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 20 }}>
+        {produtos.map((p) => (
+          <div key={p.id}>
+            <img src={p.imagem} style={{ width: "100%" }} />
+            <h3>{p.nome}</h3>
+            <p>R$ {p.preco}</p>
+          </div>
         ))}
-      </section>
-
-      <section className="p-6">
-        <div className="flex gap-2 flex-wrap mb-6">
-          <Link href="/" className="bg-white text-black px-3 py-1 rounded">
-            Todos
-          </Link>
-
-          {categorias.map((categoria) => {
-            const slug = slugCategoria(categoria);
-
-            return (
-              <Link
-                key={categoria}
-                href={`/?categoria=${slug}`}
-                className="border px-3 py-1 rounded"
-              >
-                {categoria}
-              </Link>
-            );
-          })}
-        </div>
-
-        <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-          {produtosFiltrados.map((produto) => (
-            <div key={produto.id} className="bg-white/5 rounded-xl overflow-hidden">
-              <img
-                src={produto.imagem}
-                className="w-full h-56 object-cover"
-              />
-
-              <div className="p-3">
-                <h2 className="font-semibold">{produto.nome}</h2>
-
-                <p className="text-green-400 font-bold">
-                  R$ {produto.preco}
-                </p>
-
-                <a
-                  href={`https://wa.me/${numeroWhatsApp}?text=${encodeURIComponent(
-                    `Olá! Tenho interesse em ${produto.nome}`
-                  )}`}
-                  className="block mt-2 bg-white text-black text-center py-2 rounded"
-                >
-                  Ver no WhatsApp
-                </a>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-    </main>
+      </div>
+    </div>
   );
 }
