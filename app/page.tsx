@@ -8,20 +8,13 @@ type Produto = {
   nome: string;
   imagem: string;
   categoria: string;
-  preco: string;
 };
 
 function formatarNome(nome: string) {
   return nome
     .replace(/\.[^/.]+$/, "")
-    .replace(/-\d+$/, "") // remove preço do final
-    .replace(/-/g, " ")
+    .replace(/[-_]+/g, " ")
     .replace(/\b\w/g, (l) => l.toUpperCase());
-}
-
-function extrairPreco(nome: string) {
-  const match = nome.match(/-(\d+)\./);
-  return match ? match[1] : "0";
 }
 
 async function lerProdutos() {
@@ -36,12 +29,11 @@ async function lerProdutos() {
     const arquivos = await fs.readdir(pasta);
 
     for (const arquivo of arquivos) {
-      if (!/\.(jpg|png|webp)$/i.test(arquivo)) continue;
+      if (!/\.(jpg|jpeg|png|webp)$/i.test(arquivo)) continue;
 
       produtos.push({
         id: id++,
         nome: formatarNome(arquivo),
-        preco: extrairPreco(arquivo),
         imagem: `/produtos/${categoria}/${arquivo}`,
         categoria: categoria,
       });
@@ -63,7 +55,6 @@ export default async function Page() {
           <div key={p.id}>
             <img src={p.imagem} style={{ width: "100%" }} />
             <h3>{p.nome}</h3>
-            <p>R$ {p.preco}</p>
           </div>
         ))}
       </div>
