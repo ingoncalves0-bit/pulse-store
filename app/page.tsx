@@ -1,5 +1,3 @@
-// 👇 MANTIVE SEU LAYOUT — só corrigi erros
-
 import { promises as fs } from "fs";
 import path from "path";
 import Link from "next/link";
@@ -39,12 +37,7 @@ async function lerProdutos(): Promise<Produto[]> {
   try {
     const base = path.join(process.cwd(), "public", "produtos");
 
-    let categoriasDir: any[] = [];
-    try {
-      categoriasDir = await fs.readdir(base, { withFileTypes: true });
-    } catch {
-      return [];
-    }
+    const categoriasDir = await fs.readdir(base, { withFileTypes: true });
 
     const produtos: Produto[] = [];
     let id = 1;
@@ -53,13 +46,7 @@ async function lerProdutos(): Promise<Produto[]> {
       if (!cat.isDirectory()) continue;
 
       const pasta = path.join(base, cat.name);
-
-      let arquivos: string[] = [];
-      try {
-        arquivos = await fs.readdir(pasta);
-      } catch {
-        continue;
-      }
+      const arquivos = await fs.readdir(pasta);
 
       for (const arquivo of arquivos) {
         if (!/\.(jpg|jpeg|png|webp)$/i.test(arquivo)) continue;
@@ -74,8 +61,7 @@ async function lerProdutos(): Promise<Produto[]> {
     }
 
     return produtos;
-  } catch (e) {
-    console.error(e);
+  } catch {
     return [];
   }
 }
@@ -102,83 +88,169 @@ export default async function Home({
   return (
     <>
       <style>{`
-        /* 🔥 SEU CSS ORIGINAL — só removi o @import */
-
-        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-        :root {
-          --cream: #f5f0e8;
-          --ink: #0f0e0c;
-          --warm: #1a1714;
-          --accent: #c8501a;
-          --muted: #9c9389;
-          --border: rgba(15,14,12,0.1);
-        }
+        * { box-sizing: border-box; margin:0; padding:0; }
 
         body {
-          background: var(--cream);
-          color: var(--ink);
           font-family: Arial, sans-serif;
+          background: #f5f5f5;
+          color: #111;
         }
 
-        /* 👇 TODO SEU RESTO DO CSS FICA IGUAL */
+        /* NAV */
+        .nav {
+          position: sticky;
+          top:0;
+          background:white;
+          display:flex;
+          justify-content:space-between;
+          padding:15px 25px;
+          border-bottom:1px solid #eee;
+          z-index:10;
+        }
+
+        .nav a {
+          text-decoration:none;
+          color:#111;
+          margin-right:10px;
+          font-size:14px;
+        }
+
+        /* HERO */
+        .hero {
+          display:grid;
+          grid-template-columns:1fr 1fr;
+          height:60vh;
+        }
+
+        .hero-left {
+          padding:40px;
+          display:flex;
+          flex-direction:column;
+          justify-content:center;
+        }
+
+        .hero-left h1 {
+          font-size:48px;
+        }
+
+        .hero-right {
+          display:grid;
+          grid-template-columns:1fr 1fr;
+          grid-auto-rows:1fr;
+        }
+
+        .hero-img img {
+          width:100%;
+          height:100%;
+          object-fit:cover;
+        }
+
+        /* CATALOGO */
+        .catalogo {
+          padding:40px;
+        }
+
+        .grid {
+          display:grid;
+          grid-template-columns:repeat(auto-fill,minmax(220px,1fr));
+          gap:20px;
+        }
+
+        .card {
+          background:white;
+          border-radius:12px;
+          overflow:hidden;
+          box-shadow:0 4px 20px rgba(0,0,0,0.08);
+          transition:0.2s;
+        }
+
+        .card:hover {
+          transform:translateY(-5px);
+        }
+
+        .card img {
+          width:100%;
+          height:300px;
+          object-fit:cover;
+        }
+
+        .card-body {
+          padding:15px;
+        }
+
+        .card-body h3 {
+          font-size:16px;
+          margin-bottom:10px;
+        }
+
+        .btn {
+          display:block;
+          background:black;
+          color:white;
+          text-align:center;
+          padding:10px;
+          border-radius:8px;
+          text-decoration:none;
+          font-size:14px;
+        }
+
+        .btn:hover {
+          background:#444;
+        }
+
+        @media(max-width:768px){
+          .hero { grid-template-columns:1fr; height:auto; }
+          .hero-right { height:200px; }
+        }
       `}</style>
 
-      {/* 👇 SEU HTML ORIGINAL — NÃO MUDEI ESTRUTURA */}
+      {/* NAV */}
+      <div className="nav">
+        <strong>{nomeLoja}</strong>
 
-      <nav className="nav">
-        <a href="/" className="nav-logo">
-          Pulse<span>.</span>
-        </a>
-
-        <div className="nav-right">
-          <div className="nav-cats">
-            <Link href="/" className={`nav-cat ${categoriaSelecionada === "todos" ? "ativo" : ""}`}>
-              Todos
+        <div>
+          <Link href="/">Todos</Link>
+          {categorias.map((cat) => (
+            <Link key={cat} href={`/?categoria=${slugCategoria(cat)}`}>
+              {cat}
             </Link>
-
-            {categorias.map((cat) => {
-              const slug = slugCategoria(cat);
-              return (
-                <Link
-                  key={cat}
-                  href={`/?categoria=${slug}`}
-                  className={`nav-cat ${categoriaSelecionada === slug ? "ativo" : ""}`}
-                >
-                  {cat}
-                </Link>
-              );
-            })}
-          </div>
-
-          <a href={`https://wa.me/${numeroWhatsApp}`} className="nav-wpp">
-            WhatsApp
-          </a>
+          ))}
         </div>
-      </nav>
+      </div>
 
+      {/* HERO */}
       <section className="hero">
         <div className="hero-left">
-          <h1 className="hero-title">
-            Moda que <em>fala</em> por você.
-          </h1>
+          <h1>Catálogo</h1>
+          <p>Escolha e peça pelo WhatsApp</p>
         </div>
 
         <div className="hero-right">
           {hero.map((p) => (
             <div key={p.id} className="hero-img">
-              <img src={p.imagem} alt={p.nome} />
+              <img src={p.imagem} />
             </div>
           ))}
         </div>
       </section>
 
+      {/* CATALOGO */}
       <section className="catalogo">
-        <div className="grid-produtos">
+        <div className="grid">
           {produtosFiltrados.map((produto) => (
             <div key={produto.id} className="card">
               <img src={produto.imagem} />
-              <h3>{produto.nome}</h3>
+              <div className="card-body">
+                <h3>{produto.nome}</h3>
+                <a
+                  className="btn"
+                  href={`https://wa.me/${numeroWhatsApp}?text=${encodeURIComponent(
+                    `Tenho interesse em ${produto.nome}`
+                  )}`}
+                >
+                  Ver no WhatsApp
+                </a>
+              </div>
             </div>
           ))}
         </div>
